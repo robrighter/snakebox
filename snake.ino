@@ -4,6 +4,9 @@
 #include "Adafruit_GFX.h"
 #include <stdlib.h>
 
+#define SCREEN_WIDTH 9
+#define CHAR_WIDTH 14
+
 const byte JOYSTICK_DIRECTION_NONE = 5;
 const byte JOYSTICK_DIRECTION_UP = 2;
 const byte JOYSTICK_DIRECTION_DOWN = 4;
@@ -11,13 +14,22 @@ const byte JOYSTICK_DIRECTION_LEFT = 1;
 const byte JOYSTICK_DIRECTION_RIGHT = 3;
 const byte JOYSTICK_DIRECTION_CENTER = 0;
 
+const byte GAME_MODE_MENU = 1;
+const byte GAME_MODE_SNAKE = 2;
+const byte GAME_MODE_ANIMATOR = 3;
+const byte GAME_MODE_BREAKOUT = 4;
+const byte GAME_MODE_TETRIS = 5;
+const byte LAST_GAME_MODE = GAME_MODE_ANIMATOR;
+const byte FIRST_GAME_MODE = GAME_MODE_SNAKE;
+
+
 const byte NUMBER_OF_PINS = 5;
 const int buttonPins[NUMBER_OF_PINS] = {8,9,10,11,12};
 Adafruit_8x16matrix matrix = Adafruit_8x16matrix();
 
 //application variables
 byte pointerPosition[2] = {0,0};
-byte lastDirection = 0;
+byte lastDirection = JOYSTICK_DIRECTION_NONE;
 boolean screenMatrix[8][16] = {
   {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
   {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
@@ -28,6 +40,8 @@ boolean screenMatrix[8][16] = {
   {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
   {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
 };
+byte currentGameMode = GAME_MODE_MENU;
+byte menuCurrentSelected = GAME_MODE_SNAKE;
 
 void setup() {
   Serial.begin(9600);
@@ -51,6 +65,30 @@ byte getJoystickDirection(){
 void drawPixel(byte x,byte y){
   matrix.drawPixel(x,y, LED_ON);
 }
+
+void scrollText(String toscroll, boolean endOnJoystickMove) {
+  matrix.clear();
+  int spacing = toscroll.length()*CHAR_WIDTH;
+  matrix.setTextSize(2);
+  matrix.setTextWrap(false);  // we dont want text to wrap so it scrolls nicely
+  matrix.setTextColor(LED_ON);
+  matrix.setRotation(0);
+  for (int x=(SCREEN_WIDTH); x>(0-(spacing)); x--) {
+    matrix.clear();
+    matrix.setCursor(x,0);
+    matrix.print(toscroll);
+    matrix.writeDisplay();
+    byte direction = getJoystickDirection();
+    if(direction != JOYSTICK_DIRECTION_NONE){
+      lastDirection = direction;
+      if(endOnJoystickMove){
+        return;  
+      }
+    }
+    delay(80);
+  }
+}
+
 
 void movePointerByJoystickDirection(byte direction){
   if(direction == JOYSTICK_DIRECTION_UP){
@@ -77,7 +115,7 @@ void drawMatrix(){
   }
 }
 
-void loop() {
+void gameModeAnimatorLoop(){
   matrix.clear();
   byte direction = getJoystickDirection();
   if(direction != lastDirection){
@@ -103,5 +141,54 @@ void loop() {
   drawMatrix();
   drawPixel(pointerPosition[0],pointerPosition[1]);
   matrix.writeDisplay();
-  delay(30);
+  delay(30);  
+}
+
+void gameModeSnakeLoop(){
+  //not implemented
+  scrollText("not implemented", false);
+  currentGameMode = GAME_MODE_MENU;
+}
+
+void gameModeMenuLoop(){
+  if(lastDirection != JOYSTICK_DIRECTION_NONE){
+    if((lastDirection == JOYSTICK_DIRECTION_DOWN) && (menuCurrentSelected<LAST_GAME_MODE)){
+      menuCurrentSelected++;
+    }
+    else if((lastDirection == JOYSTICK_DIRECTION_UP) && (menuCurrentSelected>FIRST_GAME_MODE)){
+      menuCurrentSelected--;
+    }
+    else if(lastDirection == JOYSTICK_DIRECTION_CENTER){
+      currentGameMode = menuCurrentSelected;
+      menuCurrentSelected = FIRST_GAME_MODE;
+      lastDirection = JOYSTICK_DIRECTION_NONE;
+      delay(100);
+      return;  
+    }
+    lastDirection = JOYSTICK_DIRECTION_NONE;
+  }
+  if(menuCurrentSelected == GAME_MODE_SNAKE){
+    scrollText("Snake", true);
+  }
+  else if(menuCurrentSelected == GAME_MODE_ANIMATOR){
+    scrollText("Animator", true);
+  }
+}
+
+void loop() {
+  
+  switch(currentGameMode){
+    case GAME_MODE_MENU:
+      gameModeMenuLoop();
+      break;
+    case GAME_MODE_SNAKE:
+      gameModeSnakeLoop();
+      break;
+    case GAME_MODE_ANIMATOR:
+      gameModeAnimatorLoop();
+      break;
+  }
+  
+
+  
 }
