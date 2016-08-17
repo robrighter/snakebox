@@ -13,6 +13,7 @@ extern boolean screenMatrix[8][16] = {
 };
 
 extern Adafruit_8x16matrix matrix = Adafruit_8x16matrix();
+extern byte pointerPosition[2] = {0,0};
 
 void drawMatrix(){
   for(int x=0;x<8;x++){
@@ -48,5 +49,21 @@ void scrollText(String toscroll, boolean endOnJoystickMove) {
       }
     }
     delay(50);
+  }
+}
+
+
+void movePointerByJoystickDirection(byte direction){
+  if(direction == JOYSTICK_DIRECTION_UP){
+     pointerPosition[1]--;   
+  }
+  if(direction == JOYSTICK_DIRECTION_DOWN){
+    pointerPosition[1]++;  
+  }
+  if(direction == JOYSTICK_DIRECTION_LEFT){
+    pointerPosition[0]--;  
+  }
+  if(direction == JOYSTICK_DIRECTION_RIGHT){
+    pointerPosition[0]++;  
   }
 }
