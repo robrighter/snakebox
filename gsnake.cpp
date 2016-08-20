@@ -6,13 +6,13 @@
 
 
 
-byte countDownDelay = 20;
+byte countDownDelay = 15;
 byte snakeLevel = 1;
 byte snakeLength = 2;
 int8_t xSnake[128] = {1,0,-1};
 int8_t ySnake[128] = {0,0,-1};
 byte currentSnakeDirection = JOYSTICK_DIRECTION_RIGHT;
-byte applePosition[2] = {2,5};
+int8_t applePosition[2] = {2,5};
 boolean shouldGrow = false;
 
 void resetTheGame(){
@@ -51,13 +51,6 @@ boolean moveTheSnake(byte direction, boolean grow){
   xSnake[xTail] = -1;
   ySnake[yTail] = -1;
 
-  char coordprint[12];
-  for(byte i=0;i<20; i++){
-    sprintf(coordprint, "(%d,%d), ",xSnake[i], ySnake[i]);
-    Serial.print(coordprint);
-  }
-  Serial.print("\n\n");
-  
   Serial.print("moveTheSnake: insert the new coord at the head (0,0)\n");
   if(direction == JOYSTICK_DIRECTION_UP){
       ySnake[0]--;
@@ -87,8 +80,60 @@ boolean moveTheSnake(byte direction, boolean grow){
       return true; 
     }   
   }
+  char coordprint[12];
+  for(byte i=0;i<20; i++){
+    sprintf(coordprint, "(%d,%d), ",xSnake[i], ySnake[i]);
+    Serial.print(coordprint);
+  }
+  Serial.print("\n\n");
   return false;
 }
+
+boolean isCoordInSnake(int8_t x, int8_t y, byte startFrom=0){
+  char toprint[100];
+  sprintf(toprint, "isCoordInSnake x=%d y=%d starting from %d", x, y, startFrom);
+  Serial.println(toprint);
+  while(xSnake[startFrom] != -1){
+    if((xSnake[startFrom] == x) && (ySnake[startFrom] == y)){
+      Serial.println("Returning True");
+      return true;  
+    }
+    startFrom++;
+  }
+  Serial.println("Returning False");
+  return false;
+}
+
+boolean doesSnakeOverlap(){
+  byte i = 0;
+  while(xSnake[i] != -1){
+    if(isCoordInSnake(xSnake[i], ySnake[i], i+1)){
+      return true;
+    }
+    i++;
+  }
+  return false;
+}
+
+void setNewApplePosition(){
+  byte possibleLocationsForTheApple = snakeLength - 128;
+  byte choosenLocation = random(possibleLocationsForTheApple);
+  int8_t x;
+  int8_t y;
+  //iterate through the possible locations until we get to the choosen location
+  for(byte i=0;i<choosenLocation;){
+    for(y=0; y<16; y++){
+      for(x=0; x<8; x++){
+        if(!isCoordInSnake(x, y)){
+          i++;  
+        }
+      }
+    }
+  }
+  applePosition[0] = x;
+  applePosition[1] = y;
+}
+
 
 byte readNewSnakeDirection(){
   Serial.print("readNewSnakeDirection - Listening for new direction\n"); 
@@ -139,6 +184,10 @@ void gameModeSnakeLoop(){
   boolean isGameOverEvent = false;
   Serial.print("move the snake in the recorded direction\n"); 
   isGameOverEvent = moveTheSnake(currentSnakeDirection, shouldGrow);
+  if(shouldGrow){
+    //last time we ate the apple so lets move it to a new location
+    setNewApplePosition();
+  }
 
   Serial.print("draw the moved snake\n"); 
   matrix.clear();
@@ -147,7 +196,10 @@ void gameModeSnakeLoop(){
   matrix.writeDisplay();
   
   //See if the snake hit itself (look for duplicate coords)
-
+  if(!isGameOverEvent){
+    isGameOverEvent = doesSnakeOverlap();
+  }
+  
   if(isGameOverEvent){
     snakeGameOver();
     return;
@@ -157,6 +209,7 @@ void gameModeSnakeLoop(){
   if((xSnake[0] == applePosition[0]) && (ySnake[0] == applePosition[1])){
     //The snake ate the apple
     shouldGrow = true;
+    snakeLength++;
   }
   else{
     shouldGrow = false;

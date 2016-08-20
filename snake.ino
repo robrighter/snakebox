@@ -11,8 +11,8 @@ void setup() {
   Serial.begin(9600);
   setupJoystickPins();
   pinMode(13,OUTPUT);
-  matrix.begin(0x70);  // pass in the address
-
+  matrix.begin(0x70);
+  randomSeed(analogRead(0));
 }
 
 void loop() {
