@@ -12,7 +12,8 @@ byte snakeLength = 2;
 int8_t xSnake[128] = {1,0,-1};
 int8_t ySnake[128] = {0,0,-1};
 byte currentSnakeDirection = JOYSTICK_DIRECTION_RIGHT;
-byte applePosition[2] = {2,0};
+byte applePosition[2] = {2,5};
+boolean shouldGrow = false;
 
 void resetTheGame(){
   snakeLevel = 1;
@@ -25,7 +26,8 @@ void resetTheGame(){
   ySnake[2] = -1;
   currentSnakeDirection = JOYSTICK_DIRECTION_RIGHT;
   applePosition[0] = 2;
-  applePosition[1] = 0;
+  applePosition[1] = 5;
+  shouldGrow = false;
 }
 
 boolean moveTheSnake(byte direction, boolean grow){
@@ -66,7 +68,7 @@ boolean moveTheSnake(byte direction, boolean grow){
   }
   if(direction == JOYSTICK_DIRECTION_DOWN){
       ySnake[0]++;
-      if(ySnake[0]>16){
+      if(ySnake[0]>15){
         //hit the end of the screen
         return true; 
       }  
@@ -80,7 +82,7 @@ boolean moveTheSnake(byte direction, boolean grow){
   }
   if(direction == JOYSTICK_DIRECTION_RIGHT){
     xSnake[0]++;
-    if(xSnake[0]>8){
+    if(xSnake[0]>7){
       //hit the end of the screen
       return true; 
     }   
@@ -105,6 +107,10 @@ void drawSnake(){
   for(int8_t i=0; xSnake[i]>-1; i++){
      drawPixel(xSnake[i],ySnake[i]); 
   }
+}
+
+void drawTheApple(){
+  drawPixel(applePosition[0],applePosition[1]);
 }
 
 void snakeGameOver(){
@@ -132,11 +138,12 @@ void gameModeSnakeLoop(){
   
   boolean isGameOverEvent = false;
   Serial.print("move the snake in the recorded direction\n"); 
-  isGameOverEvent = moveTheSnake(currentSnakeDirection, false);
+  isGameOverEvent = moveTheSnake(currentSnakeDirection, shouldGrow);
 
   Serial.print("draw the moved snake\n"); 
   matrix.clear();
   drawSnake();
+  drawTheApple();
   matrix.writeDisplay();
   
   //See if the snake hit itself (look for duplicate coords)
@@ -147,8 +154,13 @@ void gameModeSnakeLoop(){
   }
 
   //handle eating the apple
-    //Detect the collide
-    //Extend the length of the snake
+  if((xSnake[0] == applePosition[0]) && (ySnake[0] == applePosition[1])){
+    //The snake ate the apple
+    shouldGrow = true;
+  }
+  else{
+    shouldGrow = false;
+  }
 
   Serial.print("Read the new direction\n");
   readNewSnakeDirection();
