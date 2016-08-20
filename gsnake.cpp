@@ -1,91 +1,156 @@
+#include "Arduino.h"
 #include "gsnake.h"
 #include "matrixscreen.h"
 #include "joystick.h"
 #include "gmenu.h"
 
 
-int countDownDelay = 20;
-int snakeLevel = 1;
-int xSnake[129] = {1,0,-1};
-int ySnake[129] = {0,0,-1};
+
+byte countDownDelay = 20;
+byte snakeLevel = 1;
+byte snakeLength = 2;
+int8_t xSnake[128] = {1,0,-1};
+int8_t ySnake[128] = {0,0,-1};
 byte currentSnakeDirection = JOYSTICK_DIRECTION_RIGHT;
 byte applePosition[2] = {2,0};
 
+void resetTheGame(){
+  snakeLevel = 1;
+  snakeLength = 2;
+  xSnake[0] = 1;
+  xSnake[1] = 0;
+  xSnake[2] = -1;
+  ySnake[0] = 0;
+  ySnake[1] = 0;
+  ySnake[2] = -1;
+  currentSnakeDirection = JOYSTICK_DIRECTION_RIGHT;
+  applePosition[0] = 2;
+  applePosition[1] = 0;
+}
 
-boolean moveTheSnake(byte direction){
+boolean moveTheSnake(byte direction, boolean grow){
   //find the tail (-1,-1)
-  int offset = 0;
+  Serial.print("moveTheSnake: find the tail (-1,-1)\n");
+  int8_t offset = 0;
   while(xSnake[offset]>-1){
     offset++;
   }
-  //make the new tail
-  xSnake[offset+2] = -1;
-  ySnake[offset+2] = -1;
-  //count back and move all the array values down
+  int8_t xTail = offset + (grow ? 1 : 0);
+  int8_t yTail = offset + (grow ? 1 : 0);
+  
+  Serial.print("moveTheSnake: count back and move all the array values down\n");
   while(offset>-1){
     xSnake[offset+1] = xSnake[offset]; 
     ySnake[offset+1] = ySnake[offset]; 
     offset--;
   }
+
+  Serial.print("moveTheSnake: make the new tail\n");
+  xSnake[xTail] = -1;
+  ySnake[yTail] = -1;
+
+  char coordprint[12];
+  for(byte i=0;i<20; i++){
+    sprintf(coordprint, "(%d,%d), ",xSnake[i], ySnake[i]);
+    Serial.print(coordprint);
+  }
+  Serial.print("\n\n");
   
-  //insert the new coord at the head (0,0)
+  Serial.print("moveTheSnake: insert the new coord at the head (0,0)\n");
   if(direction == JOYSTICK_DIRECTION_UP){
       ySnake[0]--;
       if(ySnake[0]<0){
         //hit the end of the screen
-        return false; 
+        return true; 
       }
   }
   if(direction == JOYSTICK_DIRECTION_DOWN){
       ySnake[0]++;
       if(ySnake[0]>16){
         //hit the end of the screen
-        return false; 
+        return true; 
       }  
   }
   if(direction == JOYSTICK_DIRECTION_LEFT){
       xSnake[0]--;
       if(xSnake[0]<0){
         //hit the end of the screen
-        return false; 
+        return true; 
       }  
   }
   if(direction == JOYSTICK_DIRECTION_RIGHT){
     xSnake[0]++;
     if(xSnake[0]>8){
       //hit the end of the screen
-      return false; 
+      return true; 
     }   
   }
-  return true;
+  return false;
 }
 
 byte readNewSnakeDirection(){
-  for(int i=0; i<(countDownDelay - snakeLevel ); i++){
+  Serial.print("readNewSnakeDirection - Listening for new direction\n"); 
+  for(byte i=0; i<(countDownDelay - snakeLevel ); i++){
     byte readDirection = getJoystickDirection();
     if((readDirection != JOYSTICK_DIRECTION_NONE) && (readDirection != JOYSTICK_DIRECTION_CENTER)){
       currentSnakeDirection = readDirection;  
     }
     delay(50);
   }
+  Serial.println("readNewSnakeDirection - Returning direction of "+currentSnakeDirection);
   return currentSnakeDirection;
 }
 
+void drawSnake(){
+  for(int8_t i=0; xSnake[i]>-1; i++){
+     drawPixel(xSnake[i],ySnake[i]); 
+  }
+}
+
+void snakeGameOver(){
+  char toscroll[48];
+  sprintf(toscroll, "Game Over at Level %d, snake length %d ", snakeLevel, snakeLength);
+  while(true){
+    lastDirection == JOYSTICK_DIRECTION_NONE;
+    scrollText(toscroll, true);
+    if(lastDirection == JOYSTICK_DIRECTION_CENTER){
+      //reset the game and return
+      resetTheGame();
+      return;  
+    }
+    if(lastDirection == JOYSTICK_DIRECTION_UP){
+      //reset to the main menu and return
+      //TODO
+    }  
+  }
+  
+}
+
+
 
 void gameModeSnakeLoop(){
-  //move the snake in the recorded direction
-  moveTheSnake(currentSnakeDirection);
+  
+  boolean isGameOverEvent = false;
+  Serial.print("move the snake in the recorded direction\n"); 
+  isGameOverEvent = moveTheSnake(currentSnakeDirection, false);
 
-  //draw the moved snake
-
+  Serial.print("draw the moved snake\n"); 
+  matrix.clear();
+  drawSnake();
+  matrix.writeDisplay();
   
   //See if the snake hit itself (look for duplicate coords)
+
+  if(isGameOverEvent){
+    snakeGameOver();
+    return;
+  }
 
   //handle eating the apple
     //Detect the collide
     //Extend the length of the snake
 
-  //Read the new direction
+  Serial.print("Read the new direction\n");
   readNewSnakeDirection();
 }
 
