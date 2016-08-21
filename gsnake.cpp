@@ -90,17 +90,17 @@ boolean moveTheSnake(byte direction, boolean grow){
 }
 
 boolean isCoordInSnake(int8_t x, int8_t y, byte startFrom=0){
-  char toprint[100];
-  sprintf(toprint, "isCoordInSnake x=%d y=%d starting from %d", x, y, startFrom);
-  Serial.println(toprint);
+  //char toprint[100];
+  //sprintf(toprint, "isCoordInSnake x=%d y=%d starting from %d", x, y, startFrom);
+  //Serial.println(toprint);
   while(xSnake[startFrom] != -1){
     if((xSnake[startFrom] == x) && (ySnake[startFrom] == y)){
-      Serial.println("Returning True");
+      //Serial.println("Returning True");
       return true;  
     }
     startFrom++;
   }
-  Serial.println("Returning False");
+  //Serial.println("Returning False");
   return false;
 }
 
@@ -117,21 +117,24 @@ boolean doesSnakeOverlap(){
 
 void setNewApplePosition(){
   byte possibleLocationsForTheApple = snakeLength - 128;
-  byte choosenLocation = random(possibleLocationsForTheApple);
+  long choosenLocation = random(possibleLocationsForTheApple);
   int8_t x;
   int8_t y;
   //iterate through the possible locations until we get to the choosen location
-  for(byte i=0;i<choosenLocation;){
-    for(y=0; y<16; y++){
-      for(x=0; x<8; x++){
-        if(!isCoordInSnake(x, y)){
-          i++;  
-        }
+  int i=0;
+  for(y=0; y<16; y++){
+    for(x=0; x<8; x++){
+      if(!isCoordInSnake(x, y)){
+        i++;
+        if(i==choosenLocation){
+          applePosition[0] = x;
+          applePosition[1] = y;
+          return;  
+        }  
       }
-    }
+    }  
   }
-  applePosition[0] = x;
-  applePosition[1] = y;
+  //should never get here
 }
 
 
@@ -142,7 +145,7 @@ byte readNewSnakeDirection(){
     if((readDirection != JOYSTICK_DIRECTION_NONE) && (readDirection != JOYSTICK_DIRECTION_CENTER)){
       currentSnakeDirection = readDirection;  
     }
-    delay(50);
+    delay(20);
   }
   Serial.println("readNewSnakeDirection - Returning direction of "+currentSnakeDirection);
   return currentSnakeDirection;
