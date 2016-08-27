@@ -115,15 +115,17 @@ boolean doesSnakeOverlap(){
   return false;
 }
 
-void setNewApplePosition(){
+
+void setNewApplePosition(byte direction){
   byte possibleLocationsForTheApple = snakeLength - 128;
   long choosenLocation = random(possibleLocationsForTheApple);
   int8_t x;
   int8_t y;
   //iterate through the possible locations until we get to the choosen location
   int i=0;
-  for(y=0; y<16; y++){
+  for(y=15; y>-1; y--){
     for(x=0; x<8; x++){
+      
       if(!isCoordInSnake(x, y)){
         i++;
         if(i==choosenLocation){
@@ -145,7 +147,7 @@ byte readNewSnakeDirection(){
     if((readDirection != JOYSTICK_DIRECTION_NONE) && (readDirection != JOYSTICK_DIRECTION_CENTER)){
       currentSnakeDirection = readDirection;  
     }
-    delay(20);
+    delay(10);
   }
   Serial.println("readNewSnakeDirection - Returning direction of "+currentSnakeDirection);
   return currentSnakeDirection;
@@ -163,7 +165,7 @@ void drawTheApple(){
 
 void snakeGameOver(){
   char toscroll[48];
-  sprintf(toscroll, "Game Over at Level %d, snake length %d ", snakeLevel, snakeLength);
+  sprintf(toscroll, "Game Over length %d Level %d ", snakeLength, snakeLevel);
   while(true){
     lastDirection == JOYSTICK_DIRECTION_NONE;
     scrollText(toscroll, true);
@@ -174,7 +176,8 @@ void snakeGameOver(){
     }
     if(lastDirection == JOYSTICK_DIRECTION_UP){
       //reset to the main menu and return
-      //TODO
+      currentGameMode = GAME_MODE_MENU;
+      return;
     }  
   }
   
@@ -189,7 +192,7 @@ void gameModeSnakeLoop(){
   isGameOverEvent = moveTheSnake(currentSnakeDirection, shouldGrow);
   if(shouldGrow){
     //last time we ate the apple so lets move it to a new location
-    setNewApplePosition();
+    setNewApplePosition(currentSnakeDirection);
   }
 
   Serial.print("draw the moved snake\n"); 
@@ -209,7 +212,7 @@ void gameModeSnakeLoop(){
   }
 
   //handle eating the apple
-  if((xSnake[0] == applePosition[0]) && (ySnake[0] == applePosition[1])){
+  if( isCoordInSnake(applePosition[0], applePosition[1]) ){
     //The snake ate the apple
     shouldGrow = true;
     snakeLength++;
