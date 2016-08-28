@@ -21,7 +21,7 @@ void gameModeAnimatorLoop(){
     }
     if(direction == JOYSTICK_DIRECTION_CENTER){
       Serial.print("Center\n");
-      screenMatrix[pointerPosition[0]][pointerPosition[1]] = true;  
+      screenMatrix[pointerPosition[0]][pointerPosition[1]] = !screenMatrix[pointerPosition[0]][pointerPosition[1]];  
     }
     lastDirection = direction;
     movePointerByJoystickDirection( direction);  

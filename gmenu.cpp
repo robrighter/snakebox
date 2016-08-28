@@ -23,10 +23,17 @@ void gameModeMenuLoop(){
     }
     lastDirection = JOYSTICK_DIRECTION_NONE;
   }
+  Serial.print("menuCurrentSelected is ");
+  Serial.print(menuCurrentSelected);
+  Serial.print("\n");
   if(menuCurrentSelected == GAME_MODE_SNAKE){
     scrollText("Snake", true);
   }
   else if(menuCurrentSelected == GAME_MODE_ANIMATOR){
     scrollText("Animator", true);
   }
+  else if(menuCurrentSelected == GAME_MODE_BREAKOUT){
+    scrollText("Breakout", true);
+  }
+  delay(500);
 }

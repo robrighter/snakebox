@@ -6,6 +6,7 @@
 #include "gmenu.h"
 #include "ganimator.h"
 #include "gsnake.h"
+#include "gbreakout.h"
 
 void setup() {
   Serial.begin(9600);
@@ -26,6 +27,9 @@ void loop() {
       break;
     case GAME_MODE_ANIMATOR:
       gameModeAnimatorLoop();
+      break;
+    case GAME_MODE_BREAKOUT:
+      gameModeBreakoutLoop();
       break;
   }
 }
